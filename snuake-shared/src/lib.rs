@@ -1,7 +1,7 @@
 extern crate serde;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 // This should be put in game
-#[derive(Debug,Serialize,Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum UserCommand {
     MoveUp,
     MoveDown,
@@ -9,19 +9,18 @@ pub enum UserCommand {
     MoveRight,
 }
 
-
 /// Comes in from net
-#[derive(Debug,Serialize,Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ClientMsg {
     Ping(usize),
     Authenticate,
     CCmd(String),
-    UCmd(UserCommand)
+    UCmd(UserCommand),
 }
 
 /// Goes out to the net
-#[derive(Debug,Serialize,Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ServerMsg {
     Pong(usize),
-    Game(String)
+    Game(String),
 }

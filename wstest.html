@@ -1,0 +1,86 @@
+<meta charset="utf-8" />
+<title>WebSocket Test</title>
+<template id="UI">
+	<div style="width:500px;display:flex;flex-direction:column;padding:5px;">
+		<div style="display:flex;">
+			<input style="flex:1;" type="text"/>
+			<button>Send</button>
+			<button>Close</button>
+		</div>
+		<pre style="flex:1;">WebSocket test client</pre>
+	</div>
+</template>
+<script language="javascript" type="text/javascript">
+	window.addEventListener("load", function() {
+		let uri = "ws://127.0.0.1:8080/"
+		if (location.hash.length > 0) { uri = location.hash }
+		CreateTester(uri)
+	}, false);
+
+	function CreateUI(target) {
+		let ret = { onClose: function() {}, onSend: function() {} }
+
+		let ui = document.importNode(document.getElementById("UI").content, true).children[0]
+		target.appendChild(ui)
+		ret.remove = function() { ui.remove() }
+
+		let output = ui.children[1]
+		ret.append = function(line) {
+			output.innerText += "\n" + line
+		}
+
+		let inputEls = ui.children[0].children
+		inputEls[1].onclick = function() { ret.onSend(inputEls[0].value) }
+		inputEls[2].onclick = function() { ret.onClose() }
+
+		return ret
+	}
+	function CreateTester(uri) {
+		let ui = CreateUI(document.getElementById("target"))
+
+		let websocket = new WebSocket(uri);
+
+		function closeMode() {
+			ui.onSend  = function() { ui.append("Can't send on a close connection :(") }
+			ui.onClose = function() { ui.remove() }
+		}
+
+		// On connect
+		websocket.onopen = function(e) {
+			ui.append("!STA> Connected to "+uri+";");
+		};
+		// Sending
+		websocket.onmessage = function(e) {
+			ui.append("RECV> "+e.data+";")
+		};
+		ui.onSend = function(msg) {
+			ui.append("SENT> "+msg+";")
+			websocket.send(msg)
+		}
+		
+		// Closing
+		websocket.onclose = function(e) {
+			ui.append("!STA> Disconnected")
+			closeMode()
+		};
+		ui.onClose = function() {
+			websocket.close()
+			closeMode()
+		}
+
+		// Error
+		websocket.onerror = function(e) {
+			ui.append("!ERR> "+e.data+";")
+			closeMode()
+		};
+	}
+</script>
+<body style="box-sizing:border-box;width:100vw;height:100vh;display:flex;flex-direction:column;">
+	<div>
+		<button onclick="CreateTester('ws://127.0.0.1:8080/')">localhost:8080</button>
+		<input value='{"CCmd": ""}'/>
+		<input value='{"Ping": 0}'/>
+	</div>
+	<div id="target" style="flex:1;display:flex;flex-wrap:nowrap;"></div>
+</body>
+
