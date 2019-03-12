@@ -1,0 +1,16 @@
+[package]
+name = "snuake-server"
+version = "0.1.0"
+authors = ["kng"]
+edition = "2018"
+
+[dependencies]
+serde_json        = "1.0.0"
+
+futures           = "0.1.0"
+tokio             = "0.1.0"
+tokio-tungstenite = "*"
+
+[dependencies.snuake-shared]
+version = "*"
+path = "../snuake-shared"

@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "snuake-server",
+    "snuake-shared"
+]
