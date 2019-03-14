@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "snuake-server",
-    "snuake-shared"
+    "snuake-shared",
+    "saas"
 ]
