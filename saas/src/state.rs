@@ -1,8 +1,5 @@
-#![feature(drain_filter)]
-
 use std::collections::HashMap;
 use std::collections::VecDeque;
-use std::env;
 use std::num::NonZeroUsize;
 
 use crate::entity::*;
