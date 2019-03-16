@@ -1,19 +1,114 @@
 #[macro_use]
 extern crate stdweb;
 
+use stdweb::traits::*;
+use stdweb::web::{event::KeyDownEvent, IEventTarget};
+
+use std::cell::RefCell;
+use std::rc::Rc;
+
 mod canvas;
-use crate::canvas::Canvas;
+use crate::canvas::*;
+
+use saas::state::*;
+use saas::entity::*;
+
+// ++++++++
+// + Draw +
+// ++++++++
+
+trait Color {
+    fn color(&self) -> &str;
+}
+
+impl Color for saas::entity::Tag {
+    fn color(&self) -> &str {
+        match self {
+            Tag { kind: Kind::None, id: _ } => "black",
+            Tag { kind: Kind::Prop, id: 0 } => "green",
+            Tag { kind: Kind::Prop, id: _ } => "red",
+            Tag { kind: Kind::SnakeHead, id: 0 } => "cyan",
+            Tag { kind: Kind::SnakeBody, id: 0 } => "cyan",
+            Tag { kind: Kind::SnakeHead, id: _ } => "magenta",
+            Tag { kind: Kind::SnakeBody, id: _ } => "magenta",
+        }
+    }
+}
+
+trait Draw {
+    fn draw(&self, gc: &GridCanvas);
+}
+
+impl Draw for GridData {
+    fn draw(&self, gc: &GridCanvas) {
+        let mut it = self.tags.iter();
+
+        for i in 0..self.rows {
+            for j in 0..self.cols {
+                let color = it.next().unwrap().color();
+                gc.draw_at(i as u32, j as u32, color);
+            }
+        }
+    }
+}
+
+const WIDTH: u32 = 20;
+const HEIGHT: u32 = 20;
+
+fn init_state() -> saas::state::State {
+    State::builder()
+        .with_dimensions(HEIGHT as usize, WIDTH as usize)
+        .build()
+}
+
+
+fn tick(state: &mut State) { state.tick() }
+
+fn draw(state: &State, grid_canvas: &GridCanvas) {
+    grid_canvas.clear("black");
+    state.get_grid_data().draw(&grid_canvas);
+
+}
+
+fn game_loop(
+    state: Rc<RefCell<State>>,
+    canvas: Rc<Canvas>,
+    wait_ms: u64,
+    prev_ms: u64,
+    curr_ms: u64,
+    )
+{
+    let should_tick = prev_ms + wait_ms <= curr_ms;
+
+    if should_tick {
+        // borrow state and canvas
+        let mut state = state.borrow_mut();
+        let canvas = canvas.clone();
+        let grid_canvas = canvas.grid_canvas(HEIGHT, WIDTH);
+
+        // tick
+        tick(&mut state);
+
+        // draw
+        draw(&state, &grid_canvas);
+    }
+
+    let prev_ms = if should_tick { curr_ms } else { prev_ms };
+
+    stdweb::web::window().request_animation_frame(move |time| {
+        game_loop(state.clone(), canvas.clone(), wait_ms, prev_ms, time as u64)
+    });
+}
 
 fn main() {
     stdweb::initialize();
 
     let canvas = Canvas::new("#canvas");
-    let gc = canvas.grid_canvas(20, 20);
+    let canvas = Rc::new(canvas);
+    let state = init_state();
+    let state = Rc::new(RefCell::new(state));
 
-    gc.clear("black");
-    gc.draw_at(0, 0, "red");
-    gc.draw_at(1, 1, "orange");
-    gc.draw_at(19, 19, "blue");
+    game_loop(state, canvas, 250, 0, 0);
 
     stdweb::event_loop();
 }
