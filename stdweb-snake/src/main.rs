@@ -10,6 +10,7 @@ use std::rc::Rc;
 mod canvas;
 use crate::canvas::*;
 
+use saas::util::*;
 use saas::state::*;
 use saas::entity::*;
 
@@ -52,6 +53,11 @@ impl Draw for GridData {
     }
 }
 
+// struct State {
+    // snake_id: saas::entity::SnakeID,
+    // game_state: saas::state::State,
+// }
+
 const WIDTH: u32 = 20;
 const HEIGHT: u32 = 20;
 
@@ -61,13 +67,36 @@ fn init_state() -> saas::state::State {
         .build()
 }
 
-
 fn tick(state: &mut State) { state.tick() }
 
 fn draw(state: &State, grid_canvas: &GridCanvas) {
     grid_canvas.clear("black");
     state.get_grid_data().draw(&grid_canvas);
 
+}
+
+fn input(state: &Rc<RefCell<State>>) {
+    stdweb::web::document().add_event_listener({
+        let state = state.clone();
+        move |ev: KeyDownEvent | {
+            // the directions are all messed up...
+            match ev.key().as_ref() {
+                "w" =>
+                    state.borrow_mut().give_direction(0, Direction::Left)
+                        .unwrap(),
+                "a" =>
+                    state.borrow_mut().give_direction(0, Direction::Up)
+                        .unwrap(),
+                "s" =>
+                    state.borrow_mut().give_direction(0, Direction::Right)
+                        .unwrap(),
+                "d" =>
+                    state.borrow_mut().give_direction(0, Direction::Down)
+                        .unwrap(),
+                _ => (),
+            }
+        }
+    });
 }
 
 fn game_loop(
@@ -105,10 +134,12 @@ fn main() {
 
     let canvas = Canvas::new("#canvas");
     let canvas = Rc::new(canvas);
-    let state = init_state();
+    let mut state = init_state();
+    state.add_snake().unwrap();
     let state = Rc::new(RefCell::new(state));
 
-    game_loop(state, canvas, 250, 0, 0);
+    input(&state);
+    game_loop(state, canvas, 125, 0, 0);
 
     stdweb::event_loop();
 }
