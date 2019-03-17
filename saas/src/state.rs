@@ -386,7 +386,7 @@ pub struct GameState {
 pub struct GameStateBuilder {
     rows: usize,
     cols: usize,
-    prop_spawner: Box<Fn() -> Box<Prop>>,
+    prop_spawner: Box<Fn() -> Box<Prop> + Send>,
     prop_spawn_timer: Timer,
 }
 
@@ -400,7 +400,7 @@ impl GameStateBuilder {
         }
     }
 
-    pub fn with_prop_spawner(mut self, f: Box<Fn() -> Box<Prop>>) -> Self {
+    pub fn with_prop_spawner(mut self, f: Box<Fn() -> Box<Prop> + Send>) -> Self {
         self.prop_spawner = f;
         self
     }
