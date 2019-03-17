@@ -6,10 +6,7 @@ use saas::entity::SnakeID;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum UserCommand {
-    MoveUp,
-    MoveDown,
-    MoveLeft,
-    MoveRight,
+    Direction(Direction),
 }
 
 // From clients to server
