@@ -53,25 +53,32 @@ impl Draw for GridData {
     }
 }
 
-// struct State {
-    // snake_id: saas::entity::SnakeID,
-    // game_state: saas::state::State,
-// }
+struct State {
+    snake_id: SnakeID,
+    game_state: GameState,
+}
 
 const WIDTH: u32 = 20;
 const HEIGHT: u32 = 20;
 
-fn init_state() -> saas::state::State {
-    State::builder()
+fn init() -> State {
+    let mut game_state = GameState::builder()
         .with_dimensions(HEIGHT as usize, WIDTH as usize)
-        .build()
+        .build();
+
+    let snake_id = game_state.add_snake().unwrap();
+
+    State {
+        snake_id,
+        game_state,
+    }
 }
 
-fn tick(state: &mut State) { state.tick() }
+fn tick(state: &mut State) { state.game_state.tick() }
 
 fn draw(state: &State, grid_canvas: &GridCanvas) {
     grid_canvas.clear("black");
-    state.get_grid_data().draw(&grid_canvas);
+    state.game_state.get_grid_data().draw(&grid_canvas);
 
 }
 
@@ -79,20 +86,16 @@ fn input(state: &Rc<RefCell<State>>) {
     stdweb::web::document().add_event_listener({
         let state = state.clone();
         move |ev: KeyDownEvent | {
+            let state: &mut State = &mut state.borrow_mut();
+            let game_state: &mut GameState = &mut state.game_state;
+            let id = state.snake_id;
             // the directions are all messed up...
             match ev.key().as_ref() {
-                "w" =>
-                    state.borrow_mut().give_direction(0, Direction::Left)
-                        .unwrap(),
-                "a" =>
-                    state.borrow_mut().give_direction(0, Direction::Up)
-                        .unwrap(),
-                "s" =>
-                    state.borrow_mut().give_direction(0, Direction::Right)
-                        .unwrap(),
-                "d" =>
-                    state.borrow_mut().give_direction(0, Direction::Down)
-                        .unwrap(),
+                "w" => game_state.give_direction(id, Direction::Left).unwrap(),
+                "a" => game_state.give_direction(id, Direction::Up).unwrap(),
+                "s" => game_state.give_direction(id, Direction::Right).unwrap(),
+                "d" => game_state.give_direction(id, Direction::Down).unwrap(),
+                "p" => { game_state.add_snake().unwrap(); },
                 _ => (),
             }
         }
@@ -134,8 +137,7 @@ fn main() {
 
     let canvas = Canvas::new("#canvas");
     let canvas = Rc::new(canvas);
-    let mut state = init_state();
-    state.add_snake().unwrap();
+    let state = init();
     let state = Rc::new(RefCell::new(state));
 
     input(&state);

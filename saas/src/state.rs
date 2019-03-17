@@ -369,11 +369,11 @@ impl PropManager {
     }
 }
 
-// +++++++++
-// + State +
-// +++++++++
+// +++++++++++++
+// + GameState +
+// +++++++++++++
 
-pub struct State {
+pub struct GameState {
     grid: Grid,
     prop_manager: PropManager,
     prop_spawner: Box<Fn() -> Box<Prop>>,
@@ -383,16 +383,16 @@ pub struct State {
     snake_ids: std::ops::Range<u64>,
 }
 
-pub struct StateBuilder {
+pub struct GameStateBuilder {
     rows: usize,
     cols: usize,
     prop_spawner: Box<Fn() -> Box<Prop>>,
     prop_spawn_timer: Timer,
 }
 
-impl StateBuilder {
+impl GameStateBuilder {
     pub fn new() -> Self {
-        StateBuilder {
+        GameStateBuilder {
             rows: 16,
             cols: 16,
             prop_spawner: Box::new(food_spawner),
@@ -416,8 +416,8 @@ impl StateBuilder {
         self
     }
 
-    pub fn build(self) -> State {
-        State {
+    pub fn build(self) -> GameState {
+        GameState {
             grid: Grid::new(self.rows, self.cols),
             prop_manager: PropManager::new(),
             prop_spawner: self.prop_spawner,
@@ -435,7 +435,7 @@ impl StateBuilder {
     }
 }
 
-impl State {
+impl GameState {
     fn next_prop_id(&mut self) -> PropID {
         self.prop_ids.next().unwrap()
     }
@@ -529,7 +529,7 @@ impl State {
         for snake in self.snakes.values_mut() {
             if snake.is_dead && snake.should_spawn() {
                 snake.remove(&mut self.grid);
-                State::spawn_snake(&self.grid, snake.id).map(|mut snake2| {
+                GameState::spawn_snake(&self.grid, snake.id).map(|mut snake2| {
                     snake2.score = snake.score;
                     *snake = snake2;
                 });
@@ -564,13 +564,13 @@ impl State {
         }
     }
 
-    pub fn builder() -> StateBuilder {
-        StateBuilder::new()
+    pub fn builder() -> GameStateBuilder {
+        GameStateBuilder::new()
     }
 
     pub fn add_snake(&mut self) -> Option<SnakeID> {
         let id = self.next_snake_id();
-        State::spawn_snake(&self.grid, id).map(|sn| {
+        GameState::spawn_snake(&self.grid, id).map(|sn| {
             self.snakes.insert(id, sn);
             id
         })
