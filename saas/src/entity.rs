@@ -63,7 +63,7 @@ pub enum PropEvent {
     Remove(PropID),
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub enum Kind {
     None,
     Prop,
@@ -71,7 +71,7 @@ pub enum Kind {
     SnakeBody,
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub struct Tag {
     pub kind: Kind,
     pub id: ID,

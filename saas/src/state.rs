@@ -75,7 +75,7 @@ struct Grid {
     grid: Vec<Vec<Option<Entity>>>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GridData {
     pub rows: usize,
     pub cols: usize,
