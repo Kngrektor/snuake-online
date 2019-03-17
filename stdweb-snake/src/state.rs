@@ -217,8 +217,18 @@ impl AppState for OnlineState {
     }
 
     fn give_direction(&mut self, dir: Direction) {
-        let id = self.snake_id.unwrap();
-        // send direction
+        let st = self.state;
+
+        match st {
+            State::Live => {
+                let cmd = UserCmd::Direction(dir);
+                let msg = ClientMsg::UserCmd(cmd);
+                let s = serde_json::to_string_pretty(&msg).unwrap();
+                self.sock.as_ref().map(|sock| sock.send_text(&s));
+            },
+
+            _ => (),
+        }
     }
 }
 
