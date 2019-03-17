@@ -10,6 +10,8 @@ Cargo.lock
 **/*.rs.bk
 
 # Addtional target directories
+snuake-server/target/
+snuake-shared/target/
 saas/target/
 stdweb-snake/target/
 
