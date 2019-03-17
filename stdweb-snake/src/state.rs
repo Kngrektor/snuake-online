@@ -8,11 +8,11 @@ use saas::util::*;
 use saas::state::*;
 use saas::entity::*;
 
-// +++++++++
-// + State +
-// +++++++++
+// ++++++++++++
+// + AppState +
+// ++++++++++++
 
-pub trait State {
+pub trait AppState {
     fn init(&mut self);
 
     fn should_tick(&mut self, curr_ms: u64) -> bool;
@@ -21,12 +21,12 @@ pub trait State {
 
     fn input(&mut self, ev: KeyDownEvent);
 
-    fn get_grid_data(&self) -> GridData;
+    fn get_grid_data(&mut self) -> GridData;
 
     fn give_direction(&mut self, dir: Direction);
 }
 
-pub type StatePtr = Rc<RefCell<Box<State>>>;
+pub type AppStatePtr = Rc<RefCell<Box<AppState>>>;
 
 // ++++++++++++++++
 // + OfflineState +
@@ -41,7 +41,7 @@ pub struct OfflineState {
 }
 
 impl OfflineState {
-    pub fn new(rows: u32, cols: u32) -> StatePtr {
+    pub fn new(rows: u32, cols: u32) -> AppStatePtr {
         let mut game_state = GameState::builder()
             .with_dimensions(rows as usize, cols as usize)
             .build();
@@ -60,7 +60,7 @@ impl OfflineState {
     }
 }
 
-impl State for OfflineState {
+impl AppState for OfflineState {
     fn init(&mut self) { self.is_running = true; }
 
 
@@ -82,7 +82,7 @@ impl State for OfflineState {
         }
     }
 
-    fn get_grid_data(&self) -> GridData { self.game_state.get_grid_data() }
+    fn get_grid_data(&mut self) -> GridData { self.game_state.get_grid_data() }
 
     fn give_direction(&mut self, dir: Direction) {
         let id = self.snake_id;
@@ -94,7 +94,45 @@ impl State for OfflineState {
 // + OnlineState +
 // +++++++++++++++
 
+enum State {
+    Connecting,
+    Live,
+}
 
+struct OnlineState {
+    state: State,
+    snake_id: Option<SnakeID>,
+    grid_data: Option<GridData>
+}
 
+impl OnlineState {
+    fn new() -> AppStatePtr {
+        let st = OnlineState {
+            state: State::Connecting,
+            snake_id: None,
+            grid_data: None,
+        };
 
+        Rc::new(RefCell::new(Box::new(st)))
+    }
+}
+
+impl AppState for OnlineState {
+    fn init(&mut self) {
+        // connect
+    }
+
+    fn should_tick(&mut self, curr_ms: u64) -> bool { self.grid_data.is_some() }
+
+    fn tick(&mut self) { }
+
+    fn input(&mut self, ev: KeyDownEvent) {  }
+
+    fn get_grid_data(&mut self) -> GridData { self.grid_data.take().unwrap() }
+
+    fn give_direction(&mut self, dir: Direction) {
+        let id = self.snake_id.unwrap();
+        // send direction
+    }
+}
 

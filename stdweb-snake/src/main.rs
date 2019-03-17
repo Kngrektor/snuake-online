@@ -55,7 +55,7 @@ impl Draw for GridData {
     }
 }
 
-fn on_key_down(state: &StatePtr) {
+fn on_key_down(state: &AppStatePtr) {
     stdweb::web::document().add_event_listener({
         let state = state.clone();
         move |ev: KeyDownEvent | {
@@ -72,7 +72,7 @@ fn on_key_down(state: &StatePtr) {
     });
 }
 
-fn game_loop(state: StatePtr, canvas: Rc<Canvas>, curr_ms: u64) {
+fn game_loop(state: AppStatePtr, canvas: Rc<Canvas>, curr_ms: u64) {
     {
         let mut st = state.borrow_mut();
 
