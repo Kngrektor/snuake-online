@@ -148,14 +148,17 @@ impl AppState for OnlineState {
         }).unwrap();
 
         sock.add_event_listener(|ev: SocketOpenEvent| {
+            console!(log, "Socket open!");
             console!(log, "{:?}", ev);
         });
 
         sock.add_event_listener(|ev: SocketCloseEvent| {
+            console!(log, "Socket closed!");
             console!(log, "{:?}", ev);
         });
 
         sock.add_event_listener(|ev: SocketErrorEvent| {
+            console!(log, "Socket error!");
             console!(log, "{:?}", ev);
         });
 
