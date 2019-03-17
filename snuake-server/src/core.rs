@@ -30,16 +30,20 @@ fn core_inner(
     conns: ConnMap,
 ) -> impl FnMut((SocketAddr, ClientMsg)) -> Result<(), ()> {
     move |(addr, msg)| {
+        println!("{:?}: {:?}", addr, msg);
         match msg {
             ClientMsg::CCmd(s) => {
-                println!("CCmd from {:?}: {:?}", &addr, s);
+                println!("CCmd from {:?}: {:?}", addr, s);
             }
             ClientMsg::Ping(u) => {
-                println!("Ping from {:?}: {:?}", &addr, u);
+                println!("Ping from {:?}: {:?}", addr, u);
                 let sender = conns.lock().unwrap().get(&addr).unwrap().clone();
                 tokio::spawn(
                     sender.send(ServerMsg::Pong(u)).map(|_| ()).map_err(|_| ()),
                 );
+            }
+            ClientMsg::UCmd(ucmd) => {
+                println!("UCmd from {:?}: {:?}", addr, ucmd);
             }
             _ => panic!("Not implemented :("),
         }
