@@ -120,9 +120,14 @@ impl OnlineState {
 impl AppState for OnlineState {
     fn init(&mut self) {
         // connect
+
+        // "127.0.0.1:8080".to_string()
+
+
+
     }
 
-    fn should_tick(&mut self, curr_ms: u64) -> bool { self.grid_data.is_some() }
+    fn should_tick(&mut self, _curr_ms: u64) -> bool { self.grid_data.is_some() }
 
     fn tick(&mut self) { }
 

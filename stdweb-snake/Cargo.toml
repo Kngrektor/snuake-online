@@ -9,3 +9,6 @@ stdweb = "0.4.14"
 
 [dependencies.saas]
 path = "../saas"
+
+[dependencies.snuake-shared]
+path = "../snuake-shared"

@@ -1,6 +1,9 @@
 extern crate serde;
 use serde::{Deserialize, Serialize};
-// This should be put in game
+
+use saas::util::Direction;
+use saas::entity::SnakeID;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum UserCommand {
     MoveUp,
@@ -9,7 +12,7 @@ pub enum UserCommand {
     MoveRight,
 }
 
-/// Comes in from net
+// From clients to server
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ClientMsg {
     Ping(usize),
@@ -18,9 +21,10 @@ pub enum ClientMsg {
     UCmd(UserCommand),
 }
 
-/// Goes out to the net
+// From server to clients
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ServerMsg {
     Pong(usize),
     Game(String),
+    NewID(SnakeID),
 }

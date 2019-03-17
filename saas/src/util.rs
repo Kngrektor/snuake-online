@@ -1,6 +1,9 @@
 use std::mem;
 pub use std::num::NonZeroUsize;
 
+extern crate serde;
+use serde::{Deserialize, Serialize};
+
 use rand::prelude::*;
 
 // ++++++++++++++++
@@ -55,7 +58,7 @@ impl Timer {
 // + Direction +
 // +++++++++++++
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Direction {
     Up,
     Down,
