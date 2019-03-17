@@ -81,12 +81,12 @@ fn game_loop(state: AppStatePtr, canvas: Rc<Canvas>, curr_ms: u64) {
             st.tick();
 
             // draw
-            let gd = st.get_grid_data();
-            let canvas = canvas.clone();
-            let grid_canvas = canvas.grid_canvas(gd.rows as u32, gd.cols as u32);
-
-            grid_canvas.clear("black");
-            gd.draw(&grid_canvas);
+            st.get_grid_data().map(|gd| {
+                let canvas = canvas.clone();
+                let canvas = canvas.grid_canvas(gd.rows as u32, gd.cols as u32);
+                canvas.clear("black");
+                gd.draw(&canvas);
+            });
         }
     }
 
@@ -100,7 +100,8 @@ fn main() {
 
     let canvas = Canvas::new("#canvas");
     let canvas = Rc::new(canvas);
-    let state = OfflineState::new(20, 20);
+    // let state = OfflineState::new(20, 20);
+    let state = OnlineState::new();
 
     on_key_down(&state);
     game_loop(state.clone(), canvas, 0);
