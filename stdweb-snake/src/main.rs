@@ -4,11 +4,13 @@ extern crate stdweb;
 use stdweb::traits::*;
 use stdweb::web::{event::KeyDownEvent, IEventTarget};
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 mod canvas;
 use crate::canvas::*;
+
+mod state;
+use crate::state::*;
 
 use saas::util::*;
 use saas::state::*;
@@ -53,82 +55,43 @@ impl Draw for GridData {
     }
 }
 
-struct State {
-    snake_id: SnakeID,
-    game_state: GameState,
-}
-
-const WIDTH: u32 = 20;
-const HEIGHT: u32 = 20;
-
-fn init() -> State {
-    let mut game_state = GameState::builder()
-        .with_dimensions(HEIGHT as usize, WIDTH as usize)
-        .build();
-
-    let snake_id = game_state.add_snake().unwrap();
-
-    State {
-        snake_id,
-        game_state,
-    }
-}
-
-fn tick(state: &mut State) { state.game_state.tick() }
-
-fn draw(state: &State, grid_canvas: &GridCanvas) {
-    grid_canvas.clear("black");
-    state.game_state.get_grid_data().draw(&grid_canvas);
-
-}
-
-fn input(state: &Rc<RefCell<State>>) {
+fn on_key_down(state: &StatePtr) {
     stdweb::web::document().add_event_listener({
         let state = state.clone();
         move |ev: KeyDownEvent | {
-            let state: &mut State = &mut state.borrow_mut();
-            let game_state: &mut GameState = &mut state.game_state;
-            let id = state.snake_id;
+            let state = &mut state.borrow_mut();
             // the directions are all messed up...
             match ev.key().as_ref() {
-                "w" => game_state.give_direction(id, Direction::Left).unwrap(),
-                "a" => game_state.give_direction(id, Direction::Up).unwrap(),
-                "s" => game_state.give_direction(id, Direction::Right).unwrap(),
-                "d" => game_state.give_direction(id, Direction::Down).unwrap(),
-                "p" => { game_state.add_snake().unwrap(); },
-                _ => (),
+                "w" => state.give_direction(Direction::Left),
+                "a" => state.give_direction(Direction::Up),
+                "s" => state.give_direction(Direction::Right),
+                "d" => state.give_direction(Direction::Down),
+                _ => state.input(ev),
             }
         }
     });
 }
 
-fn game_loop(
-    state: Rc<RefCell<State>>,
-    canvas: Rc<Canvas>,
-    wait_ms: u64,
-    prev_ms: u64,
-    curr_ms: u64,
-    )
-{
-    let should_tick = prev_ms + wait_ms <= curr_ms;
+fn game_loop(state: StatePtr, canvas: Rc<Canvas>, curr_ms: u64) {
+    {
+        let mut st = state.borrow_mut();
 
-    if should_tick {
-        // borrow state and canvas
-        let mut state = state.borrow_mut();
-        let canvas = canvas.clone();
-        let grid_canvas = canvas.grid_canvas(HEIGHT, WIDTH);
+        if st.should_tick(curr_ms) {
+            // tick
+            st.tick();
 
-        // tick
-        tick(&mut state);
+            // draw
+            let gd = st.get_grid_data();
+            let canvas = canvas.clone();
+            let grid_canvas = canvas.grid_canvas(gd.rows as u32, gd.cols as u32);
 
-        // draw
-        draw(&state, &grid_canvas);
+            grid_canvas.clear("black");
+            gd.draw(&grid_canvas);
+        }
     }
 
-    let prev_ms = if should_tick { curr_ms } else { prev_ms };
-
     stdweb::web::window().request_animation_frame(move |time| {
-        game_loop(state.clone(), canvas.clone(), wait_ms, prev_ms, time as u64)
+        game_loop(state.clone(), canvas.clone(), time as u64)
     });
 }
 
@@ -137,11 +100,12 @@ fn main() {
 
     let canvas = Canvas::new("#canvas");
     let canvas = Rc::new(canvas);
-    let state = init();
-    let state = Rc::new(RefCell::new(state));
+    let state = OfflineState::new(20, 20);
 
-    input(&state);
-    game_loop(state, canvas, 125, 0, 0);
+    on_key_down(&state);
+    game_loop(state.clone(), canvas, 0);
+
+    state.borrow_mut().init();
 
     stdweb::event_loop();
 }
