@@ -12,7 +12,7 @@ pub type PropID = u64;
 
 pub struct SnakeData {}
 
-pub trait Buff {
+pub trait Buff : Send {
     fn get_timer(&self) -> Timer;
     fn apply(&self, sd: SnakeData) -> SnakeData;
     fn id(&self) -> ID;
@@ -83,7 +83,7 @@ pub enum CollisionResult {
     RemoveOther,
 }
 
-pub trait Prop {
+pub trait Prop : Send {
     fn collision_result(&self) -> CollisionResult;
     fn collision_events(&self, id: SnakeID) -> Vec<SnakeEvent>;
     fn get_timer(&self) -> Option<Timer>;
