@@ -6,7 +6,7 @@ use saas::entity::SnakeID;
 use saas::state::GridData;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum UserCommand {
+pub enum UserCmd {
     Direction(Direction),
 }
 
@@ -15,8 +15,8 @@ pub enum UserCommand {
 pub enum ClientMsg {
     Ping(usize),
     Authenticate,
-    CCmd(String),
-    UCmd(UserCommand),
+    ConsoleCmd(String),
+    UserCmd(UserCmd),
 }
 
 // From server to clients
