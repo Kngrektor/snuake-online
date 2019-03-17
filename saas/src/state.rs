@@ -376,7 +376,7 @@ impl PropManager {
 pub struct GameState {
     grid: Grid,
     prop_manager: PropManager,
-    prop_spawner: Box<Fn() -> Box<Prop>>,
+    // prop_spawner: Box<Fn() -> Box<Prop>>,
     prop_spawn_timer: Timer,
     snakes: HashMap<SnakeID, Snake>,
     prop_ids: std::ops::Range<u64>,
@@ -386,7 +386,7 @@ pub struct GameState {
 pub struct GameStateBuilder {
     rows: usize,
     cols: usize,
-    prop_spawner: Box<Fn() -> Box<Prop> + Send>,
+    // prop_spawner: Box<Fn() -> Box<Prop> + Send>,
     prop_spawn_timer: Timer,
 }
 
@@ -395,13 +395,13 @@ impl GameStateBuilder {
         GameStateBuilder {
             rows: 16,
             cols: 16,
-            prop_spawner: Box::new(food_spawner),
+            // prop_spawner: Box::new(food_spawner),
             prop_spawn_timer: Timer::new(5),
         }
     }
 
     pub fn with_prop_spawner(mut self, f: Box<Fn() -> Box<Prop> + Send>) -> Self {
-        self.prop_spawner = f;
+        // self.prop_spawner = f;
         self
     }
 
@@ -420,7 +420,7 @@ impl GameStateBuilder {
         GameState {
             grid: Grid::new(self.rows, self.cols),
             prop_manager: PropManager::new(),
-            prop_spawner: self.prop_spawner,
+            // prop_spawner: self.prop_spawner,
             prop_spawn_timer: self.prop_spawn_timer,
             snakes: HashMap::new(),
             prop_ids: std::ops::Range {
@@ -460,9 +460,10 @@ impl GameState {
         if self.prop_spawn_timer.is_done() {
             if let Some(pos) = self.grid.index_of_rand_vacant() {
                 let pid = self.next_prop_id();
-                let prop = (self.prop_spawner)();
+                // let prop = (self.prop_spawner)();
+                let prop = food_spawner();
                 self.prop_manager.add(prop.get_timer(), pid, pos);
-                self.grid.add(pos, Entity::Prop(pid, (self.prop_spawner)()));
+                self.grid.add(pos, Entity::Prop(pid, prop));
             }
 
             self.prop_spawn_timer.reset();
