@@ -120,7 +120,7 @@ pub struct OnlineState {
     state: State,
     snake_id: Option<SnakeID>,
     grid_data: Option<GridData>,
-    sock: Option<WebSocket>,
+    sock: Option<Rc<RefCell<WebSocket>>>,
     msgs: Rc<RefCell<VecDeque<ServerMsg>>>
 }
 
@@ -141,28 +141,39 @@ impl OnlineState {
 impl AppState for OnlineState {
     fn init(&mut self) {
         // connect
-        let sock = WebSocket::new("ws://127.0.0.1:8080")
+        let sock = WebSocket::new("ws://10.0.1.10:8080")
             .map_err(|err| {
             console!(log, "error @ init: WebSocket::new()");
             console!(log, "{:?}", err);
         }).unwrap();
 
-        sock.add_event_listener(|ev: SocketOpenEvent| {
-            console!(log, "Socket open!");
-            console!(log, "{:?}", ev);
+        let sock = Rc::new(RefCell::new(sock));
+
+        sock.borrow_mut().add_event_listener({
+            let sock = sock.clone();
+
+            move |ev: SocketOpenEvent| {
+                let msg = ClientMsg::Authenticate;
+                let s = serde_json::to_string_pretty(&msg).unwrap();
+
+                sock.borrow_mut().send_text(&s).unwrap();
+
+                console!(log, "Socket open!");
+                console!(log, "{:?}", ev);
+            }
         });
 
-        sock.add_event_listener(|ev: SocketCloseEvent| {
+        sock.borrow_mut().add_event_listener(|ev: SocketCloseEvent| {
             console!(log, "Socket closed!");
             console!(log, "{:?}", ev);
         });
 
-        sock.add_event_listener(|ev: SocketErrorEvent| {
+        sock.borrow_mut().add_event_listener(|ev: SocketErrorEvent| {
             console!(log, "Socket error!");
             console!(log, "{:?}", ev);
         });
 
-        sock.add_event_listener({
+        sock.borrow_mut().add_event_listener({
             let msgs = self.msgs.clone();
             move |ev: SocketMessageEvent| {
                 let msgs = &mut msgs.borrow_mut();
@@ -227,7 +238,7 @@ impl AppState for OnlineState {
                 let cmd = UserCmd::Direction(dir);
                 let msg = ClientMsg::UserCmd(cmd);
                 let s = serde_json::to_string_pretty(&msg).unwrap();
-                self.sock.as_ref().map(|sock| sock.send_text(&s));
+                self.sock.as_ref().map(|sock| sock.borrow_mut().send_text(&s));
             },
 
             _ => (),
