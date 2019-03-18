@@ -196,9 +196,9 @@ impl AppState for OnlineState {
 
     fn tick(&mut self) {
         let st = self.state;
-        let msg = self.msgs.borrow_mut().pop_front();
+        let mut msgs = self.msgs.borrow_mut();
 
-        msg.map(|msg|
+        while let Some(msg) = msgs.pop_front() {
             match st {
                 State::Connecting => {
                     match msg {
@@ -221,7 +221,7 @@ impl AppState for OnlineState {
                     }
                 }
             }
-        );
+        }
     }
 
     fn input(&mut self, _ev: KeyDownEvent) {  }
