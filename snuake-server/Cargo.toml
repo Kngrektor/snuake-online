@@ -12,5 +12,7 @@ tokio             = "0.1.0"
 tokio-tungstenite = "*"
 
 [dependencies.snuake-shared]
-version = "*"
 path = "../snuake-shared"
+
+[dependencies.saas]
+path = "../saas"
