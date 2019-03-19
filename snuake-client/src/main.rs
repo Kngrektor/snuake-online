@@ -12,6 +12,7 @@ use crate::canvas::*;
 mod state;
 use crate::state::*;
 
+mod img_placeholder;
 mod resource_loader;
 
 use saas::util::*;
