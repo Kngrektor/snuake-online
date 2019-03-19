@@ -1,2 +1,2 @@
 # snuake-client
-This repo is a snake game with a web GUI. Its main purpose is to allow development of snake games without depending on the client and the server.
+This repo is a snake game with a web GUI. It can be run with or without the server.
