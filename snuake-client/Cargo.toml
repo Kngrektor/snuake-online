@@ -1,5 +1,5 @@
 [package]
-name = "stdweb-snake"
+name = "snuake-client-snake"
 version = "0.1.0"
 authors = ["johesoman <johesoman@gmail.com>"]
 edition = "2018"
