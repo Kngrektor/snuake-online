@@ -41,7 +41,7 @@ impl<T: Eq + Hash> ImageLoader<T>  {
     pub fn new<'a, I>(mut uris: I)  -> ImageLoader<T>
     where I: Iterator<Item = (T, &'a str)>
     {
-        let imgs = uris.  map(|(key, uri)| {
+        let imgs = uris.map(|(key, uri)| {
                 let mut img = ImageElement::new();
                 img.set_src(uri);
                 (key, img)
