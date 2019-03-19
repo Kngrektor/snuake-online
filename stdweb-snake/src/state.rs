@@ -153,7 +153,7 @@ impl AppState for OnlineState {
             let sock = sock.clone();
 
             move |ev: SocketOpenEvent| {
-                let msg = ClientMsg::Authenticate;
+                let msg = ClientMsg::Join;
                 let s = serde_json::to_string_pretty(&msg).unwrap();
 
                 sock.borrow_mut().send_text(&s).unwrap();
