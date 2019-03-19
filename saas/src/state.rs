@@ -577,6 +577,13 @@ impl GameState {
         })
     }
 
+    pub fn remove_snake(&mut self, id: SnakeID) -> Result<(), ()> {
+        match self.snakes.remove(&id) {
+            None => Err(()),
+            Some(_) => Ok(()),
+        }
+    }
+
     pub fn get_score(&self, id: SnakeID) -> Option<u64> {
         self.snakes.get(&id).map(|sn| sn.score as u64)
     }
