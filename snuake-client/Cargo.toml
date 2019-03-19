@@ -1,5 +1,5 @@
 [package]
-name = "snuake-client-snake"
+name = "snuake-client"
 version = "0.1.0"
 authors = ["johesoman <johesoman@gmail.com>"]
 edition = "2018"
