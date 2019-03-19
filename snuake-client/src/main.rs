@@ -12,6 +12,8 @@ use crate::canvas::*;
 mod state;
 use crate::state::*;
 
+mod resource_loader;
+
 use saas::util::*;
 use saas::state::*;
 use saas::entity::*;
@@ -49,7 +51,7 @@ impl Draw for GridData {
         for i in 0..self.rows {
             for j in 0..self.cols {
                 let color = it.next().unwrap().color();
-                gc.draw_at(i as u32, j as u32, color);
+                gc.draw_rect_at(color, j as u32, i as u32);
             }
         }
     }
@@ -60,12 +62,11 @@ fn on_key_down(state: &AppStatePtr) {
         let state = state.clone();
         move |ev: KeyDownEvent | {
             let state = &mut state.borrow_mut();
-            // the directions are all messed up...
             match ev.key().as_ref() {
-                "w" => state.give_direction(Direction::Left),
-                "a" => state.give_direction(Direction::Up),
-                "s" => state.give_direction(Direction::Right),
-                "d" => state.give_direction(Direction::Down),
+                "w" => state.give_direction(Direction::Up),
+                "a" => state.give_direction(Direction::Left),
+                "s" => state.give_direction(Direction::Down),
+                "d" => state.give_direction(Direction::Right),
                 _ => state.input(ev),
             }
         }
@@ -100,8 +101,8 @@ fn main() {
 
     let canvas = Canvas::new("#canvas");
     let canvas = Rc::new(canvas);
-    // let state = OfflineState::new(20, 20);
-    let state = OnlineState::new();
+    let state = OfflineState::new(20, 20);
+    // let state = OnlineState::new();
 
     on_key_down(&state);
     game_loop(state.clone(), canvas, 0);

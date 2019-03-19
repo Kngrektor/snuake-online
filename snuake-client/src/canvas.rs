@@ -1,5 +1,6 @@
 use stdweb::traits::*;
 use stdweb::unstable::TryInto;
+use stdweb::web::html_element::ImageElement;
 use stdweb::web::html_element::CanvasElement;
 use stdweb::web::{document, CanvasRenderingContext2d};
 
@@ -29,10 +30,14 @@ impl Canvas {
 
     pub fn height(&self) -> u32 { self.canvas.height() }
 
-    pub fn draw_rect(&self, x: u32, y: u32, w: u32, h: u32, color: &str) {
+    pub fn draw_rect(&self, color: &str, x: u32, y: u32, w: u32, h: u32) {
         self.ctx.set_fill_style_color(color);
 
         self.ctx.fill_rect(x.into(), y.into(), w.into(), h.into());
+    }
+
+    pub fn draw_img(&self, img: ImageElement, x: u32, y:u32, w:u32, h:u32) {
+        self.ctx.draw_image_d(img, x.into(), y.into(), w.into(), h.into());
     }
 
     pub fn clear(&self, color: &str) {
@@ -68,7 +73,7 @@ impl<'a> GridCanvas<'a> {
         }
     }
 
-    pub fn draw_at(&self, x: u32, y: u32, color: &str) {
+    pub fn draw_rect_at(&self, color: &str, x: u32, y: u32) {
         assert!(x < self.cols);
         assert!(y < self.rows);
 
@@ -76,11 +81,21 @@ impl<'a> GridCanvas<'a> {
         let y = y * self.scaled_height;
 
         self.canvas.draw_rect(
+            color,
             x,
             y,
             self.scaled_width,
             self.scaled_height,
-            color,
+        )
+    }
+
+    pub fn draw_img_at(&self, img: ImageElement, x: u32, y: u32) {
+        self.canvas.draw_img(
+            img,
+            x,
+            y,
+            self.scaled_width,
+            self.scaled_height,
         )
     }
 
