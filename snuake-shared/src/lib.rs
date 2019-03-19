@@ -14,7 +14,7 @@ pub enum UserCmd {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ClientMsg {
     Ping(usize),
-    Authenticate,
+    Join,
     ConsoleCmd(String),
     UserCmd(UserCmd),
 }
