@@ -3,5 +3,5 @@ members = [
     "snuake-server",
     "snuake-shared",
     "saas",
-    "stdweb-snake"
+    "snuake-client"
 ]
