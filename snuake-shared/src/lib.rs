@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use saas::util::Direction;
 pub use saas::entity::SnakeID;
-use saas::state::GridData;
+use saas::state::GameData;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum UserCmd {
@@ -23,6 +23,6 @@ pub enum ClientMsg {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ServerMsg {
     Pong(usize),
-    GridData(GridData),
+    GameData(GameData),
     NewID(SnakeID),
 }
