@@ -5,6 +5,8 @@ use saas::util::Direction;
 pub use saas::entity::SnakeID;
 use saas::state::GameData;
 
+pub const TICKS_PER_SECOND: u64 = 8;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub enum UserCmd {
     Direction(Direction),
