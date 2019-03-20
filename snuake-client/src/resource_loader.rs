@@ -16,26 +16,27 @@ use crate::img_placeholder::IMG_PLACEHOLDER;
 use snuake_shared::*;
 
 const USER_AVATARS: &[&str] = &[
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f438.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f43c.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f42f.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f436.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f43b.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f431.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f417.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f42a.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f439.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f42e.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f434.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f437.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f42d.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f43a.png",
-    "http://github.com/EmojiTwo/emojitwo/blob/master/png/128/1f430.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f438.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f43c.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f42f.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f436.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f43b.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f431.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f42a.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f439.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f42e.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f434.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f437.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f42d.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f43a.png",
+    "http://raw.githubusercontent.com/EmojiTwo/emojitwo/master/png/128/1f430.png",
 ];
 
-struct ImageLoader<T> {
+pub struct ImageLoader<T> {
     imgs: HashMap<T, ImageElement>,
 }
+
+pub type AvatarMap = ImageLoader<SnakeID>;
 
 impl<T: Eq + Hash> ImageLoader<T>  {
     pub fn new<'a, I>(mut uris: I)  -> ImageLoader<T>
@@ -51,8 +52,8 @@ impl<T: Eq + Hash> ImageLoader<T>  {
         ImageLoader { imgs }
     }
 
-    pub fn get_img(&self, key: T) -> ImageElement {
-        if let Some(img) = self.imgs.get(&key) {
+    pub fn get_img(&self, key: &T) -> ImageElement {
+        if let Some(img) = self.imgs.get(key) {
             if img.complete() { return img.clone() }
         }
         let img = ImageElement::new();
@@ -60,10 +61,10 @@ impl<T: Eq + Hash> ImageLoader<T>  {
         img
     }
 
-    pub fn user_avatars() -> ImageLoader<UserID> {
+    pub fn user_avatars() -> AvatarMap {
         let it = USER_AVATARS.iter()
             .enumerate()
-            .map(|(i, uri)| (i as UserID, *uri));
+            .map(|(i, uri)| (i as SnakeID, *uri));
 
         ImageLoader::new(it)
     }

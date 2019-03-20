@@ -36,7 +36,7 @@ pub trait AppState {
 
     fn input(&mut self, ev: KeyDownEvent);
 
-    fn get_grid_data(&mut self) -> Option<GridData>;
+    fn get_grid_data(&mut self) -> Option<&GridData>;
 
     fn give_direction(&mut self, dir: Direction);
 }
@@ -51,6 +51,7 @@ pub struct OfflineState {
     is_running: bool,
     snake_id: SnakeID,
     game_state: GameState,
+    grid_data: GridData,
     wait_ms: u64,
     prev_ms: u64,
 }
@@ -61,12 +62,15 @@ impl OfflineState {
             .with_dimensions(rows as usize, cols as usize)
             .build();
 
+        let grid_data = game_state.get_grid_data();
+
         let snake_id = game_state.add_snake().unwrap();
 
         let st = OfflineState {
             is_running: false,
             snake_id: snake_id,
             game_state: game_state,
+            grid_data: grid_data,
             wait_ms: 125,
             prev_ms: 0,
         };
@@ -87,7 +91,10 @@ impl AppState for OfflineState {
         }
     }
 
-    fn tick(&mut self) { self.game_state.tick(); }
+    fn tick(&mut self) {
+        self.game_state.tick();
+        self.grid_data = self.game_state.get_grid_data();
+    }
 
     fn input(&mut self, ev: KeyDownEvent) {
         match ev.key().as_ref() {
@@ -96,8 +103,8 @@ impl AppState for OfflineState {
         }
     }
 
-    fn get_grid_data(&mut self) -> Option<GridData> {
-        Some(self.game_state.get_grid_data())
+    fn get_grid_data(&mut self) -> Option<&GridData> {
+        Some(&self.grid_data)
     }
 
     fn give_direction(&mut self, dir: Direction) {
@@ -226,8 +233,8 @@ impl AppState for OnlineState {
 
     fn input(&mut self, _ev: KeyDownEvent) {  }
 
-    fn get_grid_data(&mut self) -> Option<GridData> {
-        self.grid_data.take()
+    fn get_grid_data(&mut self) -> Option<&GridData> {
+        self.grid_data.as_ref()
     }
 
     fn give_direction(&mut self, dir: Direction) {
