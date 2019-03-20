@@ -1,4 +1,4 @@
-#[macro_use]
+// #[macro_use]
 use stdweb;
 use stdweb::traits::*;
 use stdweb::unstable::TryInto;
@@ -101,7 +101,46 @@ impl<'a> GridCanvas<'a> {
         )
     }
 
-    pub fn draw_img_at(&self, img: ImageElement, x: u32, y: u32) {
+    pub fn draw_rect_at_translated(
+        &self,
+        color: &str,
+        x: u32,
+        y: u32,
+        x_factor: f64,
+        y_factor: f64,
+        )
+    {
+        assert!(x < self.cols);
+        assert!(y < self.rows);
+
+        let x = x * self.scaled_width;
+        let y = y * self.scaled_height;
+
+        let translate_x = x_factor * self.scaled_width as f64;
+        let translate_y = y_factor * self.scaled_height as f64;
+        self.canvas.translate(translate_x as i32, translate_y as i32);
+
+        self.canvas.draw_rect(
+            color,
+            x,
+            y,
+            self.scaled_width,
+            self.scaled_height,
+        );
+
+        self.canvas.reset_transform();
+    }
+
+    pub fn draw_img_at_translated(
+        &self,
+        img: ImageElement,
+        x: u32,
+        y: u32,
+        x_factor: f64,
+        y_factor: f64,
+        )
+    {
+
         assert!(x < self.cols);
         assert!(y < self.rows);
 
@@ -111,6 +150,10 @@ impl<'a> GridCanvas<'a> {
         let offset: i32 = 8;
 
         self.canvas.translate(-offset, -offset);
+
+        let translate_x = x_factor * self.scaled_width as f64;
+        let translate_y = y_factor * self.scaled_height as f64;
+        self.canvas.translate(translate_x as i32, translate_y as i32);
 
         self.canvas.draw_img(
             img,

@@ -19,7 +19,7 @@ use snuake_shared::*;
 
 use saas::util::*;
 use saas::state::*;
-use saas::entity::*;
+// use saas::entity::*;
 
 use std::collections::VecDeque;
 
@@ -71,7 +71,7 @@ impl OfflineState {
             snake_id: snake_id,
             game_state: game_state,
             game_data: game_data,
-            wait_ms: 125,
+            wait_ms: 1000 / TICKS_PER_SECOND,
             prev_ms: 0,
         };
 
