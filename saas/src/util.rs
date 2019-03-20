@@ -118,6 +118,10 @@ impl Index2D {
         (self.0 as usize, self.1 as usize)
     }
 
+    pub fn get_u32(&self) -> (u32, u32) {
+        (self.0 as u32, self.1 as u32)
+    }
+
     pub fn neighbor(&self, dir: &Direction) -> Self {
         let (i, j) = (self.0, self.1);
         match dir {

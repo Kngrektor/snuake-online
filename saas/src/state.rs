@@ -77,9 +77,15 @@ struct Grid {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GridData {
-    pub rows: usize,
-    pub cols: usize,
+    pub rows: u32,
+    pub cols: u32,
     pub tags: Vec<Tag>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GameData {
+    pub came_from: HashMap<(u32, u32), (u32, u32)>,
+    pub grid_data: GridData,
 }
 
 impl Grid {
@@ -157,8 +163,8 @@ impl Grid {
             .collect();
 
         GridData {
-            rows: self.rows(),
-            cols: self.cols(),
+            rows: self.rows() as u32,
+            cols: self.cols() as u32,
             tags: out,
         }
     }
@@ -179,10 +185,15 @@ struct Snake {
     grow_count: Option<NonZeroUsize>,
     curr_dir: Direction,
     next_dir: Option<Direction>,
+    came_from: HashMap<(u32, u32), (u32, u32)>,
 }
 
 impl Snake {
     fn new(id: SnakeID, pos: Index2D) -> Self {
+        let mut came_from = HashMap::new();
+        let xy = pos.get_u32();
+        came_from.insert(xy, xy);
+
         let mut snake = Snake {
             id: id,
             pos: pos,
@@ -194,6 +205,7 @@ impl Snake {
             grow_count: None,
             curr_dir: Direction::rand(),
             next_dir: None,
+            came_from: came_from,
         };
 
         snake.grow(NonZeroUsize::one());
@@ -250,12 +262,20 @@ impl Snake {
         if !self.spawn_timer.is_done() {
             return;
         }
+
+        // prepare came_from and get previous head
+        self.came_from.clear();
+        let prev_pos = self.pos.get_u32();
+
         // move head
         self.tick_dir();
         self.pos = self
             .pos
             .neighbor(&self.curr_dir)
             .wrap((0, grid.rows()), (0, grid.cols()));
+
+        // update came_from
+        self.came_from.insert(self.pos.get_u32(), prev_pos);
     }
 
     fn move_body(&mut self, grid: &mut Grid) {
@@ -276,6 +296,12 @@ impl Snake {
                 }
 
                 None => {
+                    // update came_from
+                    if let Some(new_last) = self.body.back() {
+                        self.came_from.insert(new_last.get_u32(), last.get_u32());
+                    }
+
+                    // update grid
                     grid.remove(last);
                     None
                 }
@@ -604,5 +630,16 @@ impl GameState {
 
     pub fn get_grid_data(&self) -> GridData {
         self.grid.data()
+    }
+
+    pub fn get_game_data(&self) -> GameData {
+        let came_from: HashMap<(u32, u32), (u32, u32)> = self.snakes.values()
+            .flat_map(|sn| sn.came_from.clone().into_iter())
+            .collect();
+
+        GameData {
+            came_from: came_from,
+            grid_data: self.get_grid_data(),
+        }
     }
 }
