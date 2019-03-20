@@ -2,10 +2,8 @@ extern crate serde;
 use serde::{Deserialize, Serialize};
 
 use saas::util::Direction;
-use saas::entity::SnakeID;
+pub use saas::entity::SnakeID;
 use saas::state::GridData;
-
-pub type UserID = u64;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum UserCmd {
