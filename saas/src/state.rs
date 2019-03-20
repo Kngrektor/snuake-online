@@ -79,12 +79,19 @@ struct Grid {
 pub struct GridData {
     pub rows: u32,
     pub cols: u32,
-    pub tags: Vec<Tag>,
+    pub tags: Vec<Vec<Tag>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum CameFrom {
+    Real(((u32, u32), (u32, u32))),
+    Dummy(((u32, u32), (u32, u32))),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameData {
-    pub came_from: HashMap<(u32, u32), (u32, u32)>,
+    pub came_from_heads: HashMap<SnakeID, CameFrom>,
+    pub came_from_tails: HashMap<SnakeID, CameFrom>,
     pub grid_data: GridData,
 }
 
@@ -149,23 +156,22 @@ impl Grid {
     }
 
     fn data(&self) -> GridData {
-        let out = self
-            .grid
-            .iter()
-            .flat_map(|col| {
-                col.iter().map(|x| {
-                    x.as_ref().map(|x| x.tag()).unwrap_or(Tag {
-                        kind: Kind::None,
-                        id: 0,
-                    })
-                })
-            })
-            .collect();
+        let mut tags = vec![Vec::with_capacity(self.cols()); self.rows()];
+        for i in 0 .. self.rows() {
+            for j in 0 .. self.cols() {
+                let x = self.grid[i][j]
+                    .as_ref()
+                    .map(|x| x.tag())
+                    .unwrap_or(Tag { kind: Kind::None, id: 0 });
+
+                tags[i].push(x);
+            }
+        }
 
         GridData {
             rows: self.rows() as u32,
             cols: self.cols() as u32,
-            tags: out,
+            tags: tags,
         }
     }
 }
@@ -177,6 +183,7 @@ impl Grid {
 struct Snake {
     id: SnakeID,
     pos: Index2D,
+    prev_last: Index2D,
     is_dead: bool,
     death_timer: Option<Timer>,
     spawn_timer: Timer,
@@ -185,18 +192,16 @@ struct Snake {
     grow_count: Option<NonZeroUsize>,
     curr_dir: Direction,
     next_dir: Option<Direction>,
-    came_from: HashMap<(u32, u32), (u32, u32)>,
+    came_from_head: Option<CameFrom>,
+    came_from_tail: Option<CameFrom>,
 }
 
 impl Snake {
     fn new(id: SnakeID, pos: Index2D) -> Self {
-        let mut came_from = HashMap::new();
-        let xy = pos.get_u32();
-        came_from.insert(xy, xy);
-
         let mut snake = Snake {
             id: id,
             pos: pos,
+            prev_last: pos,
             is_dead: false,
             death_timer: None,
             spawn_timer: Timer::new(5),
@@ -205,7 +210,8 @@ impl Snake {
             grow_count: None,
             curr_dir: Direction::rand(),
             next_dir: None,
-            came_from: came_from,
+            came_from_head: None,
+            came_from_tail: None,
         };
 
         snake.grow(NonZeroUsize::one());
@@ -232,7 +238,22 @@ impl Snake {
             Some(timer) => {
                 if !timer.is_done() {
                     timer.tick();
-                    self.body.pop_front().map(|pos| grid.remove(pos));
+
+                    let first = self.body.pop_front();
+                    first.map(|first| {
+                        grid.remove(first);
+
+                        let first = first.get_u32();
+
+                        if let Some(new_first) = self.body.front() {
+                            let x = CameFrom::Real((new_first.get_u32(), first));
+                            self.came_from_tail = Some(x);
+                        } else {
+                            let prev_last = self.prev_last;
+                            let x = CameFrom::Dummy((prev_last.get_u32(), first));
+                            self.came_from_tail = Some(x);
+                        }
+                    });
                 }
             }
 
@@ -252,10 +273,9 @@ impl Snake {
     }
 
     fn remove_head(&mut self, grid: &mut Grid) {
-        if !self.spawn_timer.is_done() {
-            return;
+        if self.spawn_timer.is_done() {
+            grid.remove(self.pos);
         }
-        grid.remove(self.pos);
     }
 
     fn tick_head(&mut self, grid: &mut Grid) {
@@ -263,8 +283,6 @@ impl Snake {
             return;
         }
 
-        // prepare came_from and get previous head
-        self.came_from.clear();
         let prev_pos = self.pos.get_u32();
 
         // move head
@@ -275,12 +293,15 @@ impl Snake {
             .wrap((0, grid.rows()), (0, grid.cols()));
 
         // update came_from
-        self.came_from.insert(self.pos.get_u32(), prev_pos);
+        let x = CameFrom::Real((self.pos.get_u32(), prev_pos));
+        self.came_from_head = Some(x);
     }
 
     fn move_body(&mut self, grid: &mut Grid) {
         if !self.spawn_timer.is_done() {
             grid.add(self.pos, Entity::ImmortalSnakeHead(self.id));
+            let x = CameFrom::Real((self.pos.get_u32(), self.pos.get_u32()));
+            self.came_from_head = Some(x);
             return;
         }
 
@@ -288,23 +309,22 @@ impl Snake {
         self.body.push_front(self.pos);
         grid.add(self.pos, Entity::SnakeBody(self.id));
 
-        if let Some(last) = self.body.pop_back() {
-            self.grow_count = match self.grow_count.take() {
-                Some(x) => {
-                    self.body.push_back(last);
-                    x.decr(1)
+        self.grow_count = match self.grow_count.take() {
+            Some(x) => x.decr(1),
+
+            None => {
+                let last = self.body.pop_back().unwrap();
+                grid.remove(last);
+
+                if let Some(new_last) = self.body.back() {
+                    let x = CameFrom::Real((new_last.get_u32(), last.get_u32()));
+                    self.came_from_tail = Some(x);
                 }
 
-                None => {
-                    // update came_from
-                    if let Some(new_last) = self.body.back() {
-                        self.came_from.insert(new_last.get_u32(), last.get_u32());
-                    }
+                // update dummy tail
+                self.prev_last = last;
 
-                    // update grid
-                    grid.remove(last);
-                    None
-                }
+                None
             }
         }
     }
@@ -318,7 +338,8 @@ impl Snake {
 
     fn kill(&mut self) {
         self.is_dead = true;
-        self.death_timer = Some(Timer::new(1 * self.body.len()));
+        //  1 + is for the dummy tail
+        self.death_timer = Some(Timer::new(1 + self.body.len()));
     }
 
     fn remove(&mut self, grid: &mut Grid) {
@@ -345,6 +366,7 @@ impl Snake {
                 }
                 _ => (),
             },
+
             Direction::Left | Direction::Right => match next_dir {
                 Direction::Up | Direction::Down => {
                     self.curr_dir = next_dir;
@@ -632,13 +654,22 @@ impl GameState {
         self.grid.data()
     }
 
-    pub fn get_game_data(&self) -> GameData {
-        let came_from: HashMap<(u32, u32), (u32, u32)> = self.snakes.values()
-            .flat_map(|sn| sn.came_from.clone().into_iter())
-            .collect();
+    pub fn get_game_data(&mut self) -> GameData {
+        let mut came_from_heads: HashMap<SnakeID, CameFrom> = HashMap::new();
+        let mut came_from_tails: HashMap<SnakeID, CameFrom> = HashMap::new();
+
+        for sn in self.snakes.values_mut() {
+            if let Some(x) = sn.came_from_head.take() {
+                came_from_heads.insert(sn.id, x);
+            }
+            if let Some(x) = sn.came_from_tail.take() {
+                came_from_tails.insert(sn.id, x);
+            }
+        }
 
         GameData {
-            came_from: came_from,
+            came_from_heads: came_from_heads,
+            came_from_tails: came_from_tails,
             grid_data: self.get_grid_data(),
         }
     }
