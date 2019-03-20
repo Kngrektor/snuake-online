@@ -12,6 +12,7 @@ Cargo.lock
 # Addtional target directories
 snuake-server/target/
 snuake-shared/target/
+snuake-client/target/
 saas/target/
 snuake-online/target/
 
