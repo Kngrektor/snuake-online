@@ -32,12 +32,14 @@ trait Draw {
     fn draw(&self, gc: &GridCanvas, avatars: &AvatarMap);
 }
 
-impl Draw for GridData {
+impl Draw for GameData {
     fn draw(&self, gc: &GridCanvas, avatars: &AvatarMap) {
-        let mut it = self.tags.iter();
+        let rows = self.grid_data.rows as usize;
+        let cols = self.grid_data.cols as usize;
+        let mut it = self.grid_data.tags.iter();
 
-        for i in 0..self.rows {
-            for j in 0..self.cols {
+        for i in 0 .. rows {
+            for j in 0 .. cols {
                 let i = i as u32;
                 let j = j as u32;
                 let tag = it.next().unwrap();
@@ -54,10 +56,10 @@ impl Draw for GridData {
             }
         }
 
-        let mut it = self.tags.iter();
+        let mut it = self.grid_data.tags.iter();
 
-        for i in 0..self.rows {
-            for j in 0..self.cols {
+        for i in 0 .. rows {
+            for j in 0 .. cols {
                 let i = i as u32;
                 let j = j as u32;
                 let tag = it.next().unwrap();
@@ -98,9 +100,9 @@ fn game_loop(
         if st.should_tick(curr_ms) { st.tick(); }
 
         // draw
-        st.get_grid_data().map(|gd| {
+        st.game_data().map(|gd| {
             let canvas = canvas.clone();
-            let canvas = canvas.grid_canvas(gd.rows as u32, gd.cols as u32);
+            let canvas = canvas.grid_canvas(gd.grid_data.rows, gd.grid_data.cols);
             let avatars = avatars.clone();
             gd.draw(&canvas, avatars.borrow());
         });

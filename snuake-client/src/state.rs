@@ -36,7 +36,7 @@ pub trait AppState {
 
     fn input(&mut self, ev: KeyDownEvent);
 
-    fn get_grid_data(&mut self) -> Option<&GridData>;
+    fn game_data(&mut self) -> Option<&GameData>;
 
     fn give_direction(&mut self, dir: Direction);
 }
@@ -51,7 +51,7 @@ pub struct OfflineState {
     is_running: bool,
     snake_id: SnakeID,
     game_state: GameState,
-    grid_data: GridData,
+    game_data: GameData,
     wait_ms: u64,
     prev_ms: u64,
 }
@@ -62,7 +62,7 @@ impl OfflineState {
             .with_dimensions(rows as usize, cols as usize)
             .build();
 
-        let grid_data = game_state.get_grid_data();
+        let game_data = game_state.get_game_data();
 
         let snake_id = game_state.add_snake().unwrap();
 
@@ -70,7 +70,7 @@ impl OfflineState {
             is_running: false,
             snake_id: snake_id,
             game_state: game_state,
-            grid_data: grid_data,
+            game_data: game_data,
             wait_ms: 125,
             prev_ms: 0,
         };
@@ -93,7 +93,7 @@ impl AppState for OfflineState {
 
     fn tick(&mut self) {
         self.game_state.tick();
-        self.grid_data = self.game_state.get_grid_data();
+        self.game_data = self.game_state.get_game_data();
     }
 
     fn input(&mut self, ev: KeyDownEvent) {
@@ -103,8 +103,8 @@ impl AppState for OfflineState {
         }
     }
 
-    fn get_grid_data(&mut self) -> Option<&GridData> {
-        Some(&self.grid_data)
+    fn game_data(&mut self) -> Option<&GameData> {
+        Some(&self.game_data)
     }
 
     fn give_direction(&mut self, dir: Direction) {
@@ -126,7 +126,7 @@ enum State {
 pub struct OnlineState {
     state: State,
     snake_id: Option<SnakeID>,
-    grid_data: Option<GridData>,
+    game_data: Option<GameData>,
     sock: Option<Rc<RefCell<WebSocket>>>,
     msgs: Rc<RefCell<VecDeque<ServerMsg>>>
 }
@@ -136,7 +136,7 @@ impl OnlineState {
         let st = OnlineState {
             state: State::Connecting,
             snake_id: None,
-            grid_data: None,
+            game_data: None,
             sock: None,
             msgs: Rc::new(RefCell::new(VecDeque::new()))
         };
@@ -220,8 +220,8 @@ impl AppState for OnlineState {
 
                 State::Live => {
                     match msg {
-                        ServerMsg::GridData(gd) => {
-                            self.grid_data = Some(gd);
+                        ServerMsg::GameData(gd) => {
+                            self.game_data = Some(gd);
                         },
 
                         _ => (),
@@ -233,8 +233,8 @@ impl AppState for OnlineState {
 
     fn input(&mut self, _ev: KeyDownEvent) {  }
 
-    fn get_grid_data(&mut self) -> Option<&GridData> {
-        self.grid_data.as_ref()
+    fn game_data(&mut self) -> Option<&GameData> {
+        self.game_data.as_ref()
     }
 
     fn give_direction(&mut self, dir: Direction) {
