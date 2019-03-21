@@ -244,8 +244,10 @@ fn game_loop(
     {
         let mut st = state.borrow_mut();
 
-        if st.should_tick(curr_ms) {
-            st.tick();
+        st.tick();
+
+        if st.should_tick_game(curr_ms) {
+            st.tick_game();
             tick_timer = TickTimer::new(curr_ms, TICKS_PER_SECOND);
         }
 

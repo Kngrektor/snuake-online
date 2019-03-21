@@ -30,9 +30,11 @@ use std::collections::VecDeque;
 pub trait AppState {
     fn init(&mut self);
 
-    fn should_tick(&mut self, curr_ms: u64) -> bool;
-
     fn tick(&mut self);
+
+    fn should_tick_game(&mut self, curr_ms: u64) -> bool;
+
+    fn tick_game(&mut self);
 
     fn input(&mut self, ev: KeyDownEvent);
 
@@ -82,7 +84,10 @@ impl OfflineState {
 impl AppState for OfflineState {
     fn init(&mut self) { self.is_running = true; }
 
-    fn should_tick(&mut self, curr_ms: u64) -> bool {
+    fn tick(&mut self) {
+    }
+
+    fn should_tick_game(&mut self, curr_ms: u64) -> bool {
         if self.is_running && self.prev_ms + self.wait_ms <= curr_ms {
             self.prev_ms = curr_ms;
             true
@@ -91,7 +96,7 @@ impl AppState for OfflineState {
         }
     }
 
-    fn tick(&mut self) {
+    fn tick_game(&mut self) {
         self.game_state.tick();
         self.game_data = self.game_state.get_game_data();
     }
@@ -127,6 +132,7 @@ pub struct OnlineState {
     state: State,
     snake_id: Option<SnakeID>,
     game_data: Option<GameData>,
+    has_new_game_data: bool,
     sock: Option<Rc<RefCell<WebSocket>>>,
     msgs: Rc<RefCell<VecDeque<ServerMsg>>>
 }
@@ -137,6 +143,7 @@ impl OnlineState {
             state: State::Connecting,
             snake_id: None,
             game_data: None,
+            has_new_game_data: false,
             sock: None,
             msgs: Rc::new(RefCell::new(VecDeque::new()))
         };
@@ -191,15 +198,11 @@ impl AppState for OnlineState {
                         .map(|msg| msgs.push_back(msg))
                         .unwrap();
                 });
-
-                console!(log, "{:?}", &ev);
             }
         });
 
         self.sock = Some(sock);
     }
-
-    fn should_tick(&mut self, _curr_ms: u64) -> bool { true }
 
     fn tick(&mut self) {
         let st = self.state;
@@ -222,6 +225,7 @@ impl AppState for OnlineState {
                     match msg {
                         ServerMsg::GameData(gd) => {
                             self.game_data = Some(gd);
+                            self.has_new_game_data = true;
                         },
 
                         _ => (),
@@ -229,6 +233,14 @@ impl AppState for OnlineState {
                 }
             }
         }
+    }
+
+    fn should_tick_game(&mut self, _curr_ms: u64) -> bool {
+        self.has_new_game_data
+    }
+
+    fn tick_game(&mut self) {
+        self.has_new_game_data = false;
     }
 
     fn input(&mut self, _ev: KeyDownEvent) {  }
