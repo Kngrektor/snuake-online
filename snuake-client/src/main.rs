@@ -15,7 +15,9 @@ use crate::state::*;
 
 mod img_placeholder;
 mod resource_loader;
-use crate::resource_loader::*;
+
+mod graphics;
+use crate::graphics::*;
 
 use saas::util::*;
 use saas::state::*;
@@ -42,21 +44,15 @@ impl TickTimer {
     }
 }
 
+// ++++++++
+// + Draw +
+// ++++++++
+
 fn sgn(x: i32) -> i32 {
     if x < 0 { -1 }
     else if 0 < x { 1 }
     else { 0 }
 }
-
-fn in_bounds(x: i32, n: i32) -> bool {
-    if x < 0 || n <= x { false }
-    else { true }
-}
-
-// ++++++++
-// + Draw +
-// ++++++++
-
 
 fn draw_animated<'a, T : Clone>(
     draw: fn(&GridCanvas<'a>, T, i32, i32, f64, f64),
@@ -124,13 +120,11 @@ fn draw_animated<'a, T : Clone>(
     }
 }
 
-const BKG_COLOR: &str = "black";
-
 trait Draw {
     fn draw(
         &self,
         gc: &GridCanvas,
-        avatars: &AvatarMap,
+        gr: &Graphics,
         translate_factor: f64,
     );
 }
@@ -138,20 +132,20 @@ trait Draw {
 impl Draw for GameData {
     fn draw(
         &self,
-        gc: &GridCanvas,
-        avatars: &AvatarMap,
+        grid_canvas: &GridCanvas,
+        graphics: &Graphics,
         translate_factor: f64,
         )
     {
         let rows = self.grid_data.rows as usize;
         let cols = self.grid_data.cols as usize;
 
-        for (_id, came_from) in self.came_from_tails.iter() {
+        for (id, came_from) in self.came_from_tails.iter() {
             if let CameFrom::Dummy((curr_pos, prev_pos)) = came_from {
                 draw_animated(
                     GridCanvas::draw_rect_at_translated,
-                    gc,
-                    "yellow",
+                    grid_canvas,
+                    graphics.snake_graphics.get_color(*id),
                     curr_pos,
                     prev_pos,
                     translate_factor,
@@ -159,7 +153,7 @@ impl Draw for GameData {
 
                 let (i, j) = curr_pos;
 
-                gc.draw_rect_at(
+                grid_canvas.draw_rect_at(
                     BKG_COLOR,
                     *j as i32,
                     *i as i32,
@@ -174,22 +168,33 @@ impl Draw for GameData {
                 let j = j as i32;
 
                 match tag {
-                    Tag { kind: Kind::Prop, id: 0 } => Some("green"),
-                    Tag { kind: Kind::Prop, id: _ } => Some("red"),
-                    Tag { kind: Kind::SnakeBody, id: 0 } => Some("cyan"),
-                    Tag { kind: Kind::SnakeBody, id: _ } => Some("magenta"),
-                    _ => None,
+                    Tag { kind: Kind::Prop, id } =>
+                        grid_canvas.draw_img_at_translated(
+                            graphics.prop_graphics.get_img(id),
+                            j,
+                            i,
+                            0.0,
+                            0.0,
+                        ),
+
+                    Tag { kind: Kind::SnakeBody, id } =>
+                        grid_canvas.draw_rect_at(
+                            graphics.snake_graphics.get_color(id),
+                            j,
+                            i,
+                        ),
+
+                    _ => (),
                 }
-                .map(|color| gc.draw_rect_at(color, j, i));
             }
         }
 
-        for (_id, came_from) in self.came_from_tails.iter() {
+        for (id, came_from) in self.came_from_tails.iter() {
             if let CameFrom::Real((curr_pos, prev_pos)) = came_from {
                 draw_animated(
                     GridCanvas::draw_rect_at_translated,
-                    gc,
-                    "yellow",
+                    grid_canvas,
+                    graphics.snake_graphics.get_color(*id),
                     curr_pos,
                     prev_pos,
                     translate_factor,
@@ -201,8 +206,8 @@ impl Draw for GameData {
             if let CameFrom::Real((curr_pos, prev_pos)) = came_from {
                 draw_animated(
                     GridCanvas::draw_img_at_translated,
-                    gc,
-                    avatars.get_img(&id),
+                    grid_canvas,
+                    graphics.snake_graphics.get_head(*id),
                     curr_pos,
                     prev_pos,
                     translate_factor,
@@ -232,7 +237,7 @@ fn on_key_down(state: &AppStatePtr) {
 fn game_loop(
     state: AppStatePtr,
     canvas: Rc<Canvas>,
-    avatars: Rc<AvatarMap>,
+    graphics: Rc<Graphics>,
     mut tick_timer: TickTimer,
     curr_ms: u64)
 {
@@ -248,9 +253,13 @@ fn game_loop(
         st.game_data().map(|gd| {
             let canvas = canvas.clone();
             let canvas = canvas.grid_canvas(gd.grid_data.rows, gd.grid_data.cols);
-            let avatars = avatars.clone();
+            let graphics = graphics.clone();
             canvas.clear(BKG_COLOR);
-            gd.draw(&canvas, avatars.borrow(), tick_timer.percent_left(curr_ms));
+            gd.draw(
+                &canvas,
+                graphics.borrow(),
+                tick_timer.percent_left(curr_ms)
+            );
         });
     }
 
@@ -258,7 +267,7 @@ fn game_loop(
         game_loop(
             state.clone(),
             canvas.clone(),
-            avatars.clone(),
+            graphics.clone(),
             tick_timer,
             time as u64,
         )
@@ -271,14 +280,14 @@ fn main() {
     let _state = OnlineState::new();
     let state = OfflineState::new(20, 20);
     let canvas = Rc::new(Canvas::new("#canvas"));
-    let avatars = Rc::new(ImageLoader::<SnakeID>::user_avatars());
+    let graphics = Rc::new(Graphics::new());
 
     on_key_down(&state);
 
     game_loop(
         state.clone(),
         canvas,
-        avatars,
+        graphics,
         TickTimer::new(0, TICKS_PER_SECOND),
         0
     );

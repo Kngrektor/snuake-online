@@ -6,6 +6,8 @@ use stdweb::web::html_element::ImageElement;
 use stdweb::web::html_element::CanvasElement;
 use stdweb::web::{document, CanvasRenderingContext2d};
 
+use crate::graphics::*;
+
 pub struct Canvas {
     pub canvas: CanvasElement,
     pub ctx: CanvasRenderingContext2d,
@@ -32,13 +34,13 @@ impl Canvas {
 
     pub fn height(&self) -> u32 { self.canvas.height() }
 
-    pub fn draw_rect(&self, color: &str, x: i32, y: i32, w: u32, h: u32) {
+    pub fn draw_rect(&self, color: &str, x: i32, y: i32, w: i32, h: i32) {
         self.ctx.set_fill_style_color(color);
 
         self.ctx.fill_rect(x.into(), y.into(), w.into(), h.into());
     }
 
-    pub fn draw_img(&self, img: ImageElement, x: i32, y:i32, w:u32, h:u32) {
+    pub fn draw_img(&self, img: ImageElement, x: i32, y:i32, w:i32, h:i32) {
         self.ctx
             .draw_image_d(img, x.into(), y.into(), w.into(), h.into())
             .unwrap();
@@ -65,36 +67,32 @@ impl Canvas {
 
 pub struct GridCanvas<'a> {
     canvas: &'a Canvas,
-    scaled_width: u32,
-    scaled_height: u32,
-    cols: u32,
-    rows: u32,
+    width: i32,
+    height: i32,
 }
 
 impl<'a> GridCanvas<'a> {
     pub fn new(canvas: &'a Canvas, rows: u32, cols: u32) -> Self {
-        let scaled_width = canvas.width() / cols;
-        let scaled_height = canvas.height() / rows;
+        let width = canvas.width() as i32 / cols as i32;
+        let height = canvas.height() as i32 / rows as i32;
 
         Self {
             canvas,
-            scaled_width,
-            scaled_height,
-            cols,
-            rows,
+            width,
+            height,
         }
     }
 
     pub fn draw_rect_at(&self, color: &str, x: i32, y: i32) {
-        let x = x * self.scaled_width as i32;
-        let y = y * self.scaled_height as i32;
+        let x = x * self.width;
+        let y = y * self.height;
 
         self.canvas.draw_rect(
             color,
             x,
             y,
-            self.scaled_width,
-            self.scaled_height,
+            self.width,
+            self.height,
         )
     }
 
@@ -107,19 +105,19 @@ impl<'a> GridCanvas<'a> {
         y_factor: f64,
         )
     {
-        let x = x * self.scaled_width as i32;
-        let y = y * self.scaled_height as i32;
+        let x = x * self.width;
+        let y = y * self.height;
 
-        let translate_x = x_factor * self.scaled_width as f64;
-        let translate_y = y_factor * self.scaled_height as f64;
+        let translate_x = x_factor * self.width as f64;
+        let translate_y = y_factor * self.height as f64;
         self.canvas.translate(translate_x as i32, translate_y as i32);
 
         self.canvas.draw_rect(
             color,
             x,
             y,
-            self.scaled_width,
-            self.scaled_height,
+            self.width,
+            self.height,
         );
 
         self.canvas.reset_transform();
@@ -127,30 +125,34 @@ impl<'a> GridCanvas<'a> {
 
     pub fn draw_img_at_translated(
         &self,
-        img: ImageElement,
+        image: Image,
         x: i32,
         y: i32,
         x_factor: f64,
         y_factor: f64,
         )
     {
-        let x = x * self.scaled_width as i32;
-        let y = y * self.scaled_height as i32;
+        let x = x * self.width;
+        let y = y * self.height;
 
-        let offset: i32 = 8;
+        let width = (self.width as f64 * image.scale) as i32;
+        let height = (self.height as f64 * image.scale) as i32;
 
-        self.canvas.translate(-offset, -offset);
+        let offset_x: i32 = (width - self.width) / 2;
+        let offset_y: i32 = (height - self.height) / 2;
 
-        let translate_x = x_factor * self.scaled_width as f64;
-        let translate_y = y_factor * self.scaled_height as f64;
+        self.canvas.translate(-offset_x, -offset_y);
+
+        let translate_x = x_factor * self.width as f64;
+        let translate_y = y_factor * self.height as f64;
         self.canvas.translate(translate_x as i32, translate_y as i32);
 
         self.canvas.draw_img(
-            img,
+            image.img,
             x,
             y,
-            self.scaled_width + 2 * (offset as u32),
-            self.scaled_height + 2 * (offset as u32),
+            width,
+            height,
         );
 
         self.canvas.reset_transform();
