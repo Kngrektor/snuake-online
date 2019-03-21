@@ -2,6 +2,7 @@ extern crate serde;
 use serde::{Deserialize, Serialize};
 
 use saas::util::Direction;
+pub use saas::entity::PropID;
 pub use saas::entity::SnakeID;
 use saas::state::GameData;
 
