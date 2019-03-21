@@ -277,8 +277,8 @@ fn game_loop(
 fn main() {
     stdweb::initialize();
 
-    let _state = OnlineState::new();
-    let state = OfflineState::new(20, 20);
+    let state = OnlineState::new();
+    let _state = OfflineState::new(20, 20);
     let canvas = Rc::new(Canvas::new("#canvas"));
     let graphics = Rc::new(Graphics::new());
 
