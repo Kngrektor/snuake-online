@@ -32,13 +32,13 @@ impl Canvas {
 
     pub fn height(&self) -> u32 { self.canvas.height() }
 
-    pub fn draw_rect(&self, color: &str, x: u32, y: u32, w: u32, h: u32) {
+    pub fn draw_rect(&self, color: &str, x: i32, y: i32, w: u32, h: u32) {
         self.ctx.set_fill_style_color(color);
 
         self.ctx.fill_rect(x.into(), y.into(), w.into(), h.into());
     }
 
-    pub fn draw_img(&self, img: ImageElement, x: u32, y:u32, w:u32, h:u32) {
+    pub fn draw_img(&self, img: ImageElement, x: i32, y:i32, w:u32, h:u32) {
         self.ctx
             .draw_image_d(img, x.into(), y.into(), w.into(), h.into())
             .unwrap();
@@ -85,12 +85,9 @@ impl<'a> GridCanvas<'a> {
         }
     }
 
-    pub fn draw_rect_at(&self, color: &str, x: u32, y: u32) {
-        assert!(x < self.cols);
-        assert!(y < self.rows);
-
-        let x = x * self.scaled_width;
-        let y = y * self.scaled_height;
+    pub fn draw_rect_at(&self, color: &str, x: i32, y: i32) {
+        let x = x * self.scaled_width as i32;
+        let y = y * self.scaled_height as i32;
 
         self.canvas.draw_rect(
             color,
@@ -104,17 +101,14 @@ impl<'a> GridCanvas<'a> {
     pub fn draw_rect_at_translated(
         &self,
         color: &str,
-        x: u32,
-        y: u32,
+        x: i32,
+        y: i32,
         x_factor: f64,
         y_factor: f64,
         )
     {
-        assert!(x < self.cols);
-        assert!(y < self.rows);
-
-        let x = x * self.scaled_width;
-        let y = y * self.scaled_height;
+        let x = x * self.scaled_width as i32;
+        let y = y * self.scaled_height as i32;
 
         let translate_x = x_factor * self.scaled_width as f64;
         let translate_y = y_factor * self.scaled_height as f64;
@@ -134,18 +128,14 @@ impl<'a> GridCanvas<'a> {
     pub fn draw_img_at_translated(
         &self,
         img: ImageElement,
-        x: u32,
-        y: u32,
+        x: i32,
+        y: i32,
         x_factor: f64,
         y_factor: f64,
         )
     {
-
-        assert!(x < self.cols);
-        assert!(y < self.rows);
-
-        let x = x * self.scaled_width;
-        let y = y * self.scaled_height;
+        let x = x * self.scaled_width as i32;
+        let y = y * self.scaled_height as i32;
 
         let offset: i32 = 8;
 

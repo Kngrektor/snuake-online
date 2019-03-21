@@ -42,9 +42,87 @@ impl TickTimer {
     }
 }
 
+fn sgn(x: i32) -> i32 {
+    if x < 0 { -1 }
+    else if 0 < x { 1 }
+    else { 0 }
+}
+
+fn in_bounds(x: i32, n: i32) -> bool {
+    if x < 0 || n <= x { false }
+    else { true }
+}
+
 // ++++++++
 // + Draw +
 // ++++++++
+
+
+fn draw_animated<'a, T : Clone>(
+    draw: fn(&GridCanvas<'a>, T, i32, i32, f64, f64),
+    gc: &GridCanvas<'a>,
+    drawable: T,
+    curr_pos: &(u32, u32),
+    prev_pos: &(u32, u32),
+    translate_factor: f64,
+) {
+    let (i, j) = *curr_pos;
+    let (i2, j2) = *prev_pos;
+    let i = i as i32;
+    let j = j as i32;
+    let i2 = i2 as i32;
+    let j2 = j2 as i32;
+
+    let dx = sgn(j2 - j);
+    let dy = sgn(i2 - i);
+
+    if j + dx != j2 {
+        draw(
+            gc,
+            drawable.clone(),
+            j,
+            i,
+            -dx as f64 * translate_factor,
+            dy as f64 * translate_factor,
+        );
+
+        draw(
+            gc,
+            drawable.clone(),
+            j2 + dx,
+            i,
+            -dx as f64 * translate_factor,
+            dy as f64 * translate_factor,
+        );
+    } else if i + dy != i2 {
+        draw(
+            gc,
+            drawable.clone(),
+            j,
+            i,
+            dx as f64 * translate_factor,
+            -dy as f64 * translate_factor,
+        );
+
+        draw(
+            gc,
+            drawable.clone(),
+            j,
+            i2 + dy,
+            dx as f64 * translate_factor,
+            -dy as f64 * translate_factor,
+        );
+    } else {
+        draw(
+            gc,
+            drawable.clone(),
+            j,
+            i,
+            dx as f64 * translate_factor,
+            dy as f64 * translate_factor,
+        );
+    }
+}
 
 const BKG_COLOR: &str = "black";
 
@@ -67,26 +145,24 @@ impl Draw for GameData {
     {
         let rows = self.grid_data.rows as usize;
         let cols = self.grid_data.cols as usize;
-        let mut it = self.grid_data.tags.iter();
 
         for (_id, came_from) in self.came_from_tails.iter() {
-            if let CameFrom::Dummy(((i, j), (i2, j2))) = came_from {
-                console!(log, "here");
-                let dx = *j2 as i32 - *j as i32;
-                let dy = *i2 as i32 - *i as i32;
-
-                gc.draw_rect_at_translated(
+            if let CameFrom::Dummy((curr_pos, prev_pos)) = came_from {
+                draw_animated(
+                    GridCanvas::draw_rect_at_translated,
+                    gc,
                     "yellow",
-                    *j,
-                    *i,
-                    dx as f64 * translate_factor,
-                    dy as f64 * translate_factor,
+                    curr_pos,
+                    prev_pos,
+                    translate_factor,
                 );
+
+                let (i, j) = curr_pos;
 
                 gc.draw_rect_at(
                     BKG_COLOR,
-                    *j,
-                    *i,
+                    *j as i32,
+                    *i as i32,
                 )
             }
         }
@@ -94,8 +170,8 @@ impl Draw for GameData {
         for i in 0 .. rows {
             for j in 0 .. cols {
                 let tag = self.grid_data.tags[i][j];
-                let i = i as u32;
-                let j = j as u32;
+                let i = i as i32;
+                let j = j as i32;
 
                 match tag {
                     Tag { kind: Kind::Prop, id: 0 } => Some("green"),
@@ -109,31 +185,27 @@ impl Draw for GameData {
         }
 
         for (_id, came_from) in self.came_from_tails.iter() {
-            if let CameFrom::Real(((i, j), (i2, j2))) = came_from {
-                let dx = *j2 as i32 - *j as i32;
-                let dy = *i2 as i32 - *i as i32;
-
-                gc.draw_rect_at_translated(
+            if let CameFrom::Real((curr_pos, prev_pos)) = came_from {
+                draw_animated(
+                    GridCanvas::draw_rect_at_translated,
+                    gc,
                     "yellow",
-                    *j,
-                    *i,
-                    dx as f64 * translate_factor,
-                    dy as f64 * translate_factor,
+                    curr_pos,
+                    prev_pos,
+                    translate_factor,
                 );
             }
         }
 
         for (id, came_from) in self.came_from_heads.iter() {
-            if let CameFrom::Real(((i, j), (i2, j2))) = came_from {
-                let dx = *j2 as i32 - *j as i32;
-                let dy = *i2 as i32 - *i as i32;
-
-                gc.draw_img_at_translated(
+            if let CameFrom::Real((curr_pos, prev_pos)) = came_from {
+                draw_animated(
+                    GridCanvas::draw_img_at_translated,
+                    gc,
                     avatars.get_img(&id),
-                    *j,
-                    *i,
-                    dx as f64 * translate_factor,
-                    dy as f64 * translate_factor,
+                    curr_pos,
+                    prev_pos,
+                    translate_factor,
                 );
             }
         }
