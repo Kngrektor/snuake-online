@@ -14,6 +14,7 @@ use tokio_tungstenite::tungstenite::protocol::Message;
 
 use snuake_shared::*;
 
+use crate::streamext::StreamExt;
 use crate::core::Event;
 
 pub fn new(s: TcpStream, core_s: mpscUS<Event>) -> Spawn {
@@ -24,43 +25,34 @@ pub fn new(s: TcpStream, core_s: mpscUS<Event>) -> Spawn {
         let (ws_send, ws_recv) = ws.split();
         let (ch_send, ch_recv) = tokio::sync::mpsc::unbounded_channel();
 
-        // On open + WebSocket msgs + On close -> Core
-
-        // WebSocket opened
-        let opened = future::ok(Event::Opened(addr.clone(), ch_send))
-            .into_stream();
-        
-        // WebSocket closed
-        let closed = future::ok(Event::Closed(addr.clone()))
-            .into_stream();
-
         // WebSocket messages
         let messages = ws_recv
-            .map_err(|_| ())
-            .filter_map(|msg| {
-                if let Message::Text(s) = msg {
-                    let msg = serde_json::from_str(&s).unwrap();
-                    Some(msg)
+            .end_on_error()
+            .filter_map(|msg|{
+                if let Message::Text(msg) = msg {
+                    Some(serde_json::from_str(&msg).unwrap())
                 } else {
                     None
                 }
             })
             .map({ let addr = addr.clone(); move |msg|{
                 match msg {
-                    ClientMsg::Join  => Event::Join(addr),
+                    ClientMsg::Join          => Event::Join(addr),
                     ClientMsg::ConsoleCmd(s) => Event::CCmd(Some(addr), s),
                     ClientMsg::UserCmd(ucmd) => Event::UCmd(addr, ucmd),
-                    ClientMsg::Ping(u) => Event::Ping(addr, u)
+                    ClientMsg::Ping(u)       => Event::Ping(addr, u)
                 }
-            }});
+            }})
+            .map_err(|_|());
 
-        // Merging
-        let client_to_core = opened
+        // On open + WebSocket msgs + On close -> Core
+        let client_to_core = 
+            stream::once(Ok(Event::Opened(addr.clone(), ch_send)))
             .chain(messages)
-            .chain(closed)
-            .forward(core_s.sink_map_err(|_| panic!("Failed to send to core")))
-            .map(|_| ())
-            .map_err(|_| ());
+            .chain(stream::once(Ok(Event::Closed(addr.clone()))))
+            .forward(core_s.sink_map_err(|_|()))
+            .map(|_| ());
+
 
         // Forwards messages from core to client
         let core_to_client = ch_recv
@@ -69,7 +61,7 @@ pub fn new(s: TcpStream, core_s: mpscUS<Event>) -> Spawn {
                 let msg = serde_json::to_string(&msg).ok()?;
                 Some(Message::Text(msg))
             })
-            .forward(ws_send.sink_map_err(|_| ()))
+            .forward(ws_send.sink_map_err(|_|()))
             .map(|_| ());
 
         let conn = client_to_core.select(core_to_client)

@@ -23,7 +23,8 @@ pub fn core() -> (mpscUS<Event>, impl Future<Item = (), Error = ()>) {
 
     let (core_s, core_r) = mpsc::unbounded_channel();
 
-    let ticker = Interval::new(Instant::now(), Duration::from_millis(125))
+    let dur = Duration::from_millis(1000/TICKS_PER_SECOND);
+    let ticker = Interval::new(Instant::now(), dur)
         .map(|_|Event::Tick)
         .map_err(|_| ());
         
@@ -54,6 +55,11 @@ fn core_inner() -> impl FnMut(Event) -> Result<(), ()> {
             }
             Event::Closed(addr) => {
                 println!("Closed conn to {:?}", addr);
+                if let Some(s) = snake_ids.remove(&addr) {
+                    println!("Removing snakie {:?}", s);
+                    snake_game.remove_snake(s).unwrap();
+                }
+                connections.remove(&addr);
             }
             Event::CCmd(addr, s) => {
                 println!("CCmd from {:?}: {:?}", addr, s);
@@ -68,6 +74,7 @@ fn core_inner() -> impl FnMut(Event) -> Result<(), ()> {
             Event::Join(addr) => {
                 println!("Authenticate from {:?}", addr);
                 let snake_id = snake_game.add_snake().unwrap();
+                println!("Added snakie {:?}", snake_id);
                 let ws_s = connections.get(&addr).unwrap().clone();
                 tokio::spawn(
                     ws_s.send(ServerMsg::NewID(snake_id)).map(|_| ()).map_err(|_| ()),
@@ -86,7 +93,7 @@ fn core_inner() -> impl FnMut(Event) -> Result<(), ()> {
                 snake_game.tick();
                 for ws_s in connections.values() {
                     let ws_s = ws_s.clone();
-                    let msg = ServerMsg::GridData(snake_game.get_grid_data());
+                    let msg = ServerMsg::GameData(snake_game.get_game_data());
                     let future = ws_s.send(msg).map(|_| ()).map_err(|_| ());
                     tokio::spawn(future);
                 }

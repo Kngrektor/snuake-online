@@ -4,6 +4,7 @@ extern crate tokio;
 
 mod core;
 mod websocket;
+mod streamext;
 
 use std::env;
 
