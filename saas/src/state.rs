@@ -423,6 +423,7 @@ impl PropManager {
 
 pub struct GameState {
     grid: Grid,
+    can_get_game_data: bool,
     prop_manager: PropManager,
     // prop_spawner: Box<Fn() -> Box<Prop>>,
     prop_spawn_timer: Timer,
@@ -467,6 +468,7 @@ impl GameStateBuilder {
     pub fn build(self) -> GameState {
         GameState {
             grid: Grid::new(self.rows, self.cols),
+            can_get_game_data: false,
             prop_manager: PropManager::new(),
             // prop_spawner: self.prop_spawner,
             prop_spawn_timer: self.prop_spawn_timer,
@@ -587,9 +589,11 @@ impl GameState {
         }
 
         // tick_props() uses grid, so it needs to be called when grid is in
-        // a consistant state. This is a good place to do it, just before
-        // the draw.
+        // a consistant state. This is a good place to do it, just after
+        // we handle collisions and remove snakes.
         self.tick_props();
+
+        self.can_get_game_data = true;
     }
 
     fn process_prop_events(&mut self, evs: Vec<PropEvent>) {
@@ -654,23 +658,29 @@ impl GameState {
         self.grid.data()
     }
 
-    pub fn get_game_data(&mut self) -> GameData {
-        let mut came_from_heads: HashMap<SnakeID, CameFrom> = HashMap::new();
-        let mut came_from_tails: HashMap<SnakeID, CameFrom> = HashMap::new();
+    pub fn get_game_data(&mut self) -> Option<GameData> {
+        if self.can_get_game_data {
+            let mut came_from_heads: HashMap<SnakeID, CameFrom> = HashMap::new();
+            let mut came_from_tails: HashMap<SnakeID, CameFrom> = HashMap::new();
 
-        for sn in self.snakes.values_mut() {
-            if let Some(x) = sn.came_from_head.take() {
-                came_from_heads.insert(sn.id, x);
+            for sn in self.snakes.values_mut() {
+                if let Some(x) = sn.came_from_head.take() {
+                    came_from_heads.insert(sn.id, x);
+                }
+                if let Some(x) = sn.came_from_tail.take() {
+                    came_from_tails.insert(sn.id, x);
+                }
             }
-            if let Some(x) = sn.came_from_tail.take() {
-                came_from_tails.insert(sn.id, x);
-            }
-        }
 
-        GameData {
-            came_from_heads: came_from_heads,
-            came_from_tails: came_from_tails,
-            grid_data: self.get_grid_data(),
+            self.can_get_game_data = false;
+
+            Some(GameData {
+                came_from_heads: came_from_heads,
+                came_from_tails: came_from_tails,
+                grid_data: self.get_grid_data(),
+            })
+        } else {
+            None
         }
     }
 }

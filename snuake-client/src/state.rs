@@ -53,7 +53,7 @@ pub struct OfflineState {
     is_running: bool,
     snake_id: SnakeID,
     game_state: GameState,
-    game_data: GameData,
+    game_data: Option<GameData>,
     wait_ms: u64,
     prev_ms: u64,
 }
@@ -64,15 +64,13 @@ impl OfflineState {
             .with_dimensions(rows as usize, cols as usize)
             .build();
 
-        let game_data = game_state.get_game_data();
-
         let snake_id = game_state.add_snake().unwrap();
 
         let st = OfflineState {
             is_running: false,
             snake_id: snake_id,
             game_state: game_state,
-            game_data: game_data,
+            game_data: None,
             wait_ms: 1000 / TICKS_PER_SECOND,
             prev_ms: 0,
         };
@@ -109,7 +107,7 @@ impl AppState for OfflineState {
     }
 
     fn game_data(&mut self) -> Option<&GameData> {
-        Some(&self.game_data)
+        self.game_data.as_ref()
     }
 
     fn give_direction(&mut self, dir: Direction) {
@@ -155,7 +153,7 @@ impl OnlineState {
 impl AppState for OnlineState {
     fn init(&mut self) {
         // connect
-        let sock = WebSocket::new("ws://10.0.1.10:8080")
+        let sock = WebSocket::new("ws://127.0.0.1:8080")
             .map_err(|err| {
             console!(log, "error @ init: WebSocket::new()");
             console!(log, "{:?}", err);

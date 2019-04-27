@@ -27,7 +27,7 @@ pub fn core() -> (mpscUS<Event>, impl Future<Item = (), Error = ()>) {
     let ticker = Interval::new(Instant::now(), dur)
         .map(|_|Event::Tick)
         .map_err(|_| ());
-        
+
     let core_r = core_r
         .map_err(|_| ());
 
@@ -91,7 +91,9 @@ fn core_inner() -> impl FnMut(Event) -> Result<(), ()> {
             }
             Event::Tick => {
                 snake_game.tick();
-                let gd = snake_game.get_game_data();
+                let gd = snake_game.get_game_data()
+                    .expect("Error: snake_game.game_data() = None!");
+
                 for ws_s in connections.values() {
                     let ws_s = ws_s.clone();
                     let msg = ServerMsg::GameData(gd.clone());
