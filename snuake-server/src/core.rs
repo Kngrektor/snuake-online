@@ -6,7 +6,7 @@ use std::time::{Instant, Duration};
 
 use futures::prelude::*;
 use tokio::sync::mpsc;
-use tokio::sync::mpsc::UnboundedSender as mpscUS;
+use mpsc::UnboundedSender as mpscUS;
 use tokio::timer::Interval;
 
 pub enum Event {
@@ -91,9 +91,10 @@ fn core_inner() -> impl FnMut(Event) -> Result<(), ()> {
             }
             Event::Tick => {
                 snake_game.tick();
+                let gd = snake_game.get_game_data();
                 for ws_s in connections.values() {
                     let ws_s = ws_s.clone();
-                    let msg = ServerMsg::GameData(snake_game.get_game_data());
+                    let msg = ServerMsg::GameData(gd.clone());
                     let future = ws_s.send(msg).map(|_| ()).map_err(|_| ());
                     tokio::spawn(future);
                 }
